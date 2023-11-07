@@ -1,6 +1,6 @@
 long long sumArray(int* inputArray, int length) {
   
-  long long sum;
+  long long sum = 0;
 
   for (int i = 0; i < length; ++i) {
     sum += inputArray[i];

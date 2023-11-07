@@ -20,7 +20,8 @@ int main() {
 
   int a = 994;
   int b = 133;
-  int c;
+  
+  int c = gcd(a,b);
 
-  return gcd(a, b);
+  return c;
 }

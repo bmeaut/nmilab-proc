@@ -3,7 +3,7 @@
 //
 //  template.S       - example file
 //
-//  (C) 2021 by Pavel Pisa
+//  (C) 2021-2024 by Pavel Pisa
 //      e-mail:   pisa@cmp.felk.cvut.cz
 //      homepage: http://cmp.felk.cvut.cz/~pisa
 //      work:     http://www.pikron.com/
@@ -40,7 +40,6 @@
 .equ SERP_TX_DATA_REG,      0xffffc00c // Write word to send 8 LSB bits to terminal
 .equ SERP_TX_DATA_REG_o,        0x000c // Offset of TX_DATA_REG
 
-
 // Memory mapped peripheral for dial knobs input,
 // LED and RGB LEDs output designed to match
 // MZ_APO education Zynq based board developed
@@ -66,11 +65,18 @@
 .equ LCD_FB_START,          0xffe00000
 .equ LCD_FB_END,            0xffe4afff
 
+// RISC-V ACLINT MSWI and MTIMER memory mapped peripherals
+.equ ACLINT_MSWI,           0xfffd0000 // core 0 SW interrupt request
+.equ ACLINT_MTIMECMP,       0xfffd4000 // core 0 compare value
+.equ ACLINT_MTIME,          0xfffdbff8 // timer base 10 MHz
+
 // Mapping of interrupts
-// Irq number   Cause/Status Bit   Source
-//  2 / HW0      10                Serial port ready to accept character to Tx
-//  3 / HW1      11                There is received character ready to be read
-//  7 / HW5      15                Counter reached value in Compare register
+// mcause      mie / mip
+// irq number    bit       Source
+//   3            3        ACLINT MSWI
+//   7            7        MTIME reached value of MTIMECMP
+//  16           16        There is received character ready to be read
+//  17           17        Serial port ready to accept character to Tx
 
 // Start address after reset
 .org 0x00000200
@@ -82,12 +88,12 @@ _start:
 
 loop:
     li   a0, SERIAL_PORT_BASE           // load base address of serial port
-    addi a1, zero, text_1               // load address of text
+    la   a1, text_1                     // load address of text
     lui  t2, 0x100
-    lw   t3, 0x238(zero)
-    add  t3, t2, t3
+    lw   t3, 0x23c(zero)
+    or   t3, t2, t3
     addi t2, t2, 0x2a
-    sw   t3, 0x238(zero)
+    sw   t3, 0x23c(zero)
 
 next_char:
     lb   t1, 0(a1)                      // load one byte after another
@@ -113,3 +119,12 @@ text_1: .asciz  "Hello world.\n"    // store zero terminated ASCII text
 
 // if whole source compile is OK the switch to core tab
 #pragma qtrvsim tab core
+
+// The sample can be compiled by full-featured riscv64-unknown-elf GNU tool-chain
+// for RV32IMA use
+// riscv64-unknown-elf-gcc -c -march=rv64ima -mabi=lp64 template.S
+// riscv64-unknown-elf-gcc -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib template.o
+// for RV64IMA use
+// riscv64-unknown-elf-gcc -c -march=rv32ima -mabi=ilp32 template.S
+// riscv64-unknown-elf-gcc -march=rv32ima -mabi=ilp32 -nostartfiles -nostdlib template.o
+// add "-o template" to change default "a.out" output file name
